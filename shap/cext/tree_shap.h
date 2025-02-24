@@ -709,7 +709,7 @@ inline void build_merged_tree(TreeEnsemble &out_tree, const ExplanationDataset &
 // Independent Tree SHAP functions below here
 // ------------------------------------------
 struct Node {
-    short cl, cr, cd, pnode, feat, pfeat; // uint_16
+    long cl, cr, cd, pnode, feat, pfeat; // uint_16
     float thres, value;
     char from_flag;
 };
@@ -735,7 +735,7 @@ inline void tree_shap_indep(const unsigned max_depth, const unsigned num_feats,
                             const unsigned num_nodes, const tfloat *x,
                             const bool *x_missing, const tfloat *r,
                             const bool *r_missing, tfloat *out_contribs,
-                            float *pos_lst, float *neg_lst, signed short *feat_hist,
+                            float *pos_lst, float *neg_lst, signed long *feat_hist,
                             float *memoized_weights, int *node_stack, Node *mytree) {
 
 //     const bool DEBUG = true;
@@ -744,11 +744,129 @@ inline void tree_shap_indep(const unsigned max_depth, const unsigned num_feats,
 //       myfile.open ("/homes/gws/hughchen/shap/out.txt",fstream::app);
 //       myfile << "Entering tree_shap_indep\n";
 //     }
+    // std::cout << "Entering tree_shap_indep" << std::endl;
+    // for (unsigned i = 0; i < num_nodes; ++i) {
+    //     const Node& node = mytree[i]; // Access each node in the tree
+    //     std::cout << "Node " << i << ":" << std::endl;
+    //     std::cout << "  cl: " << node.cl << std::endl;
+    //     std::cout << "  cr: " << node.cr << std::endl;
+    //     std::cout << "  cd: " << node.cd << std::endl;
+    //     std::cout << "  pnode: " << node.pnode << std::endl;
+    //     std::cout << "  feat: " << node.feat << std::endl;
+    //     std::cout << "  pfeat: " << node.pfeat << std::endl;
+    //     std::cout << "  thres: " << node.thres << std::endl;
+    //     std::cout << "  value: " << node.value << std::endl;
+    //     std::cout << "  from_flag: " << static_cast<int>(node.from_flag) << std::endl;
+    // }
+
+    // std::ofstream logFile;
+    // logFile.open("log.txt", std::ios_base::app);
+    // logFile << "max_depth: " << max_depth << std::endl;
+    // logFile << "num_feats: " << num_feats << std::endl;
+    // logFile << "num_nodes: " << num_nodes << std::endl;
+
+    // // Log x array
+    // // logFile << "x: [";
+    // // for (unsigned i = 0; i < num_feats; ++i) {
+    // //     logFile << x[i];
+    // //     if (i < num_feats - 1) logFile << ", ";
+    // // }
+    // // logFile << "]" << std::endl;
+
+    // // // Log x_missing array
+    // // logFile << "x_missing: [";
+    // // for (unsigned i = 0; i < num_feats; ++i) {
+    // //     logFile << x_missing[i];
+    // //     if (i < num_feats - 1) logFile << ", ";
+    // // }
+    // // logFile << "]" << std::endl;
+
+    // // // Log r array
+    // // logFile << "r: [";
+    // // for (unsigned i = 0; i < num_feats; ++i) {
+    // //     logFile << r[i];
+    // //     if (i < num_feats - 1) logFile << ", ";
+    // // }
+    // // logFile << "]" << std::endl;
+
+    // // // Log r_missing array
+    // // logFile << "r_missing: [";
+    // // for (unsigned i = 0; i < num_feats; ++i) {
+    // //     logFile << r_missing[i];
+    // //     if (i < num_feats - 1) logFile << ", ";
+    // // }
+    // // logFile << "]" << std::endl;
+
+    // // // Log out_contribs array
+    // // logFile << "out_contribs: [";
+    // // for (unsigned i = 0; i <= num_feats; ++i) { // Assuming out_contribs has num_feats + 1 elements
+    // //     logFile << out_contribs[i];
+    // //     if (i < num_feats) logFile << ", ";
+    // // }
+    // // logFile << "]" << std::endl;
+
+    // // // Log pos_lst array
+    // // logFile << "pos_lst: [";
+    // // for (unsigned i = 0; i < num_nodes; ++i) {
+    // //     logFile << pos_lst[i];
+    // //     if (i < num_nodes - 1) logFile << ", ";
+    // // }
+    // // logFile << "]" << std::endl;
+
+    // // Log neg_lst array
+    // logFile << "neg_lst: [";
+    // for (unsigned i = 0; i < num_nodes; ++i) {
+    //     logFile << neg_lst[i];
+    //     if (i < num_nodes - 1) logFile << ", ";
+    // }
+    // logFile << "]" << std::endl;
+
+    // // Log feat_hist array
+    // logFile << "feat_hist: [";
+    // for (unsigned i = 0; i < num_feats; ++i) {
+    //     logFile << feat_hist[i];
+    //     if (i < num_feats - 1) logFile << ", ";
+    // }
+    // logFile << "]" << std::endl;
+
+    // // Log memoized_weights array
+    // logFile << "memoized_weights: [";
+    // for (unsigned i = 0; i < max_depth * num_feats; ++i) { // Assuming memoized_weights size
+    //     logFile << memoized_weights[i];
+    //     if (i < max_depth * num_feats - 1) logFile << ", ";
+    // }
+    // logFile << "]" << std::endl;
+
+    // // Log node_stack array
+    // logFile << "node_stack: [";
+    // for (unsigned i = 0; i < max_depth; ++i) { // Assuming node_stack size
+    //     logFile << node_stack[i];
+    //     if (i < max_depth - 1) logFile << ", ";
+    // }
+    // logFile << "]" << std::endl;
+
+    // // Log nodes in mytree
+    // logFile << "mytree:" << std::endl;
+    // for (unsigned i = 0; i < num_nodes; ++i) {
+    //     const Node& node = mytree[i];
+    //     logFile << "  Node " << i << ": {"
+    //             << " cl: " << node.cl
+    //             << ", cr: " << node.cr
+    //             << ", cd: " << node.cd
+    //             << ", pnode: " << node.pnode
+    //             << ", feat: " << node.feat
+    //             << ", pfeat: " << node.pfeat
+    //             << ", thres: " << node.thres
+    //             << ", value: " << node.value
+    //             << ", from_flag: " << static_cast<int>(node.from_flag)
+    //             << " }" << std::endl;
+    // }
+
     int ns_ctr = 0;
     std::fill_n(feat_hist, num_feats, 0);
-    short node = 0, feat, cl, cr, cd, pnode, pfeat = -1;
-    short next_xnode = -1, next_rnode = -1;
-    short next_node = -1, from_child = -1;
+    long node = 0, feat, cl, cr, cd, pnode, pfeat = -1;
+    long next_xnode = -1, next_rnode = -1;
+    long next_node = -1, from_child = -1;
     float thres, pos_x = 0, neg_x = 0, pos_r = 0, neg_r = 0;
     char from_flag;
     unsigned M = 0, N = 0;
@@ -760,7 +878,7 @@ inline void tree_shap_indep(const unsigned max_depth, const unsigned num_feats,
     cr = curr_node.cr;
     cd = curr_node.cd;
 
-    // short circuit when this is a stump tree (with no splits)
+    // long circuit when this is a stump tree (with no splits)
     if (cl < 0) {
         out_contribs[num_feats] += curr_node.value;
         return;
@@ -814,6 +932,8 @@ inline void tree_shap_indep(const unsigned max_depth, const unsigned num_feats,
     }
     node_stack[ns_ctr] = node;
     ns_ctr += 1;
+
+    // logFile << "upt to her: \n";
     while (true) {
         node = next_node;
         curr_node = mytree[node];
@@ -826,8 +946,7 @@ inline void tree_shap_indep(const unsigned max_depth, const unsigned num_feats,
         pfeat = curr_node.pfeat;
         from_flag = curr_node.from_flag;
 
-
-
+        // logFile << "node: " << node << std::endl;
 //         if (DEBUG) {
 //           myfile << "\nNode: " << node << "\n";
 //           myfile << "N: " << N << ", M: " << M << "\n";
@@ -836,7 +955,6 @@ inline void tree_shap_indep(const unsigned max_depth, const unsigned num_feats,
 //           myfile << "from_flag==FROM_NEITHER: " << (from_flag==FROM_NEITHER) << "\n";
 //           myfile << "feat_hist[feat]: " << feat_hist[feat] << "\n";
 //         }
-
         // At a leaf
         if (cl < 0) {
             //      if (DEBUG) {
@@ -973,6 +1091,7 @@ inline void tree_shap_indep(const unsigned max_depth, const unsigned num_feats,
 //                   myfile << "Came from a single path, so unroll\n";
 //                 }
                 // At the root node
+                // std::cout << "node" << std::endl;
                 if (node == 0) {
                     break;
                 }
@@ -1082,6 +1201,7 @@ inline void tree_shap_indep(const unsigned max_depth, const unsigned num_feats,
             }
         }
     }
+    // std::cout << "Exiting tree_shap_indep" << std::endl;
     //  if (DEBUG) {
     //    myfile.close();
     //  }
@@ -1150,7 +1270,7 @@ inline void dense_independent(const TreeEnsemble& trees, const ExplanationDatase
     float *pos_lst = new float[trees.max_nodes];
     float *neg_lst = new float[trees.max_nodes];
     int *node_stack = new int[(unsigned) trees.max_depth];
-    signed short *feat_hist = new signed short[data.M];
+    signed long *feat_hist = new signed long[data.M];
     tfloat *tmp_out_contribs = new tfloat[(data.M + 1)];
 
     // precompute all the weight coefficients
@@ -1170,6 +1290,7 @@ inline void dense_independent(const TreeEnsemble& trees, const ExplanationDatase
     tfloat last_print = 0;
     for (unsigned oind = 0; oind < trees.num_outputs; ++oind) {
         // set the values in the reformatted tree to the current output index
+        
         for (unsigned i = 0; i < trees.tree_limit; ++i) {
             Node *node_tree = node_trees + i * trees.max_nodes;
             for (unsigned j = 0; j < trees.max_nodes; ++j) {
@@ -1178,6 +1299,7 @@ inline void dense_independent(const TreeEnsemble& trees, const ExplanationDatase
             }
         }
 
+        // std::cout << "data num_X" << data.num_X <<std::endl;
         // loop over all the samples
         for (unsigned i = 0; i < data.num_X; ++i) {
             const tfloat *x = data.X + i * data.M;
@@ -1194,7 +1316,7 @@ inline void dense_independent(const TreeEnsemble& trees, const ExplanationDatase
                     margin_x += tree_predict(k, trees, x, x_missing)[oind];
                 }
             }
-
+            // std::cout << "inner 1" << std::endl;
             for (unsigned j = 0; j < data.num_R; ++j) {
                 const tfloat *r = data.R + j * data.M;
                 const bool *r_missing = data.R_missing + j * data.M;
@@ -1207,14 +1329,18 @@ inline void dense_independent(const TreeEnsemble& trees, const ExplanationDatase
                         margin_r += tree_predict(k, trees, r, r_missing)[oind];
                     }
                 }
-
+                // std::cout << "before tree_shap_indep" << std::endl;
+                // std::cout << "trees.tree_limit" << trees.tree_limit << std::endl;
                 for (unsigned k = 0; k < trees.tree_limit; ++k) {
+                    // std::cout << "k" << k << std::endl;
                     tree_shap_indep(
                         trees.max_depth, data.M, trees.max_nodes, x, x_missing, r, r_missing,
                         tmp_out_contribs, pos_lst, neg_lst, feat_hist, memoized_weights,
                         node_stack, node_trees + k * trees.max_nodes
                     );
                 }
+
+                // std::cout << " after tree_shap_indep" << std::endl;
 
                 // compute the rescale factor
                 if (transform != NULL) {
@@ -1239,18 +1365,19 @@ inline void dense_independent(const TreeEnsemble& trees, const ExplanationDatase
                     instance_out_contribs[data.M * trees.num_outputs + oind] += trees.base_offset[oind] + tmp_out_contribs[data.M];
                 }
             }
-
+            // std::cout<< "inner 2" << std::endl;
             // average the results over all the references.
             for (unsigned j = 0; j < (data.M + 1); ++j) {
                 instance_out_contribs[j * trees.num_outputs + oind] /= data.num_R;
             }
-
+            // std::cout << "made a single pass through" << std::endl;
             // apply the base offset to the bias term
             // for (unsigned j = 0; j < trees.num_outputs; ++j) {
             //     instance_out_contribs[data.M * trees.num_outputs + j] += (*transform)(trees.base_offset[j], 0);
             // }
         }
     }
+    // std::cout << "end of dense independent third loop" << std::endl;
 
     delete[] tmp_out_contribs;
     delete[] node_trees;
